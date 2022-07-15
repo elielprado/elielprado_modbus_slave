@@ -52,6 +52,7 @@ void loop() {
   if(myTemp >= 0 && myTemp < 51)
   {
     data[0] = myTemp*100;
+    data[9] = 0; //good data
   }else
   {
     data[9] = 1; //temperature status error
@@ -59,6 +60,7 @@ void loop() {
   if(myHumidity >= 0 && myHumidity < 101)
   {
     data[8] = myHumidity;
+    data[10] = 0; //good data
   }else{
     data[10] = 1; //humidity status error
   }
