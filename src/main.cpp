@@ -6,8 +6,9 @@
 // assign the Arduino pin that must be connected to RE-DE RS485 transceiver
 #define TXEN	4 
 const int buttonPin = 7; // the number of the pushbutton pin
-const int ledPin = 13; // the number of the LED pin
-
+const int ledPinR = 13; // the number of the LED pin
+const int ledPinY = 12; // the number of the LED pin
+const int ledPinG = 11; // the number of the LED pin
 // assign pins to KY-15 module
 #define DHTPIN 2
 #define DHTTYPE DHT11
@@ -28,7 +29,9 @@ Pos (16 bit each) : Meaning
 2 : Humidity (int) (AI)
 3 : Humidity Sensor Status (DO) (OUTPUT)
 4 : Push Button (BOOL) (DI) (INPUT)
-5 : LED (BOOL) (DO) (OUTPUT)
+5 : LEDR (BOOL) (DO) (OUTPUT)
+6 : LEDY (BOOL) (DO) (OUTPUT)
+7 : LEDG (BOOL) (DO) (OUTPUT)
 
 
 
@@ -44,7 +47,7 @@ Pos (16 bit each) : Meaning
  *  u8txenpin : 0 for RS-232 and USB-FTDI 
  *               or any pin number > 1 for RS-485
  */
-Modbus slave(1,2,TXEN); // this is slave @1 and RS-485
+Modbus slave(1,0,TXEN); // this is slave @1 and RS-485
 
 unsigned long previousMillis = 0;
 unsigned long interval = 5000;
@@ -54,14 +57,16 @@ void setup() {
   
   slave.start();
   dht.begin();
-  pinMode(ledPin, OUTPUT);
+  pinMode(ledPinR, OUTPUT);
+  pinMode(ledPinY, OUTPUT);
+  pinMode(ledPinG, OUTPUT);
   pinMode(buttonPin, INPUT);
 
 }
 
 void loop() {
   unsigned long currentMillis = millis();
-  slave.poll( data, 6 );
+  slave.poll( data, 8 ); // poll registers from slave
   if(digitalRead(buttonPin)){
     data[4] = 1;
   }
@@ -120,13 +125,27 @@ void loop() {
 
   if(data[5] == 1)
   {
-    digitalWrite(ledPin, HIGH);
+    digitalWrite(ledPinG, HIGH);
   }
   else{
-    digitalWrite(ledPin, LOW);
+    digitalWrite(ledPinG, LOW);
   }
   //data[0] = myTemp;
   //data[1] = myHumidity;
+  if(data[6] == 1)
+  {
+    digitalWrite(ledPinY, HIGH);
+  }
+  else{
+    digitalWrite(ledPinY, LOW);
+  }
+  if(data[7] == 1)
+  {
+    digitalWrite(ledPinR, HIGH);
+  }
+  else{
+    digitalWrite(ledPinR, LOW);
+  }
   
 
 }
