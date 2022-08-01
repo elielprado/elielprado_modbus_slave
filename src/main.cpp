@@ -4,35 +4,42 @@
 #include <DHT.h>
 
 // assign the Arduino pin that must be connected to RE-DE RS485 transceiver
-#define TXEN	4 
+#define TXEN	2 
 const int buttonPin = 7; // the number of the pushbutton pin
 const int ledPinR = 13; // the number of the LED pin
 const int ledPinY = 12; // the number of the LED pin
 const int ledPinG = 11; // the number of the LED pin
+const int ledPwm = 3; // the number of the LED pin
 // assign pins to KY-15 module
-#define DHTPIN 2
+#define DHTPIN 8
 #define DHTTYPE DHT11
+
+// variable for pwm led
+int brightness = 0;
+
 
 //Define our DHT object
 DHT dht(DHTPIN, DHTTYPE);
 
 
 // data array for modbus network sharing
-uint16_t data[16];
+uint16_t data[20];
 
 
 /*
 Data Variable Map:
 Pos (16 bit each) : Meaning
+//READ ONLY
 0 : Temperature (int) (AI)
 1 : Temperature Sensor Status (BOOL) (DO)
 2 : Humidity (int) (AI)
 3 : Humidity Sensor Status (DO) (OUTPUT)
 4 : Push Button (BOOL) (DI) (INPUT)
+//WRITE ONLY
 5 : LEDR (BOOL) (DO) (OUTPUT)
 6 : LEDY (BOOL) (DO) (OUTPUT)
 7 : LEDG (BOOL) (DO) (OUTPUT)
-
+8 : PWM LED (BOOL) (AO) (OUTPUT)
 
 
 
@@ -50,9 +57,9 @@ Pos (16 bit each) : Meaning
 Modbus slave(1,0,TXEN); // this is slave @1 and RS-485
 
 unsigned long previousMillis = 0;
-unsigned long interval = 5000;
+unsigned long interval = 2000;
 
-void setup() {
+void setup() {  
   Serial.begin( 9600 ); // baud-rate at 19200
   
   slave.start();
@@ -61,12 +68,12 @@ void setup() {
   pinMode(ledPinY, OUTPUT);
   pinMode(ledPinG, OUTPUT);
   pinMode(buttonPin, INPUT);
-
+  pinMode(ledPwm, OUTPUT);
 }
 
 void loop() {
   unsigned long currentMillis = millis();
-  slave.poll( data, 8 ); // poll registers from slave
+  slave.poll( data, 9 ); // poll registers from slave
   if(digitalRead(buttonPin)){
     data[4] = 1;
   }
@@ -146,6 +153,15 @@ void loop() {
   else{
     digitalWrite(ledPinR, LOW);
   }
-  
+
+    //PWM LED
+  brightness = data[8]; 
+  analogWrite(ledPwm,brightness);
+  Serial.print("PWM LED: ");
+  Serial.println(brightness);
+/*
+  Serial.print("Valor Registro: ");
+  Serial.println(data[8]);
+  */
 
 }
