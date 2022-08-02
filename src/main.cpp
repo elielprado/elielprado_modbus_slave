@@ -2,9 +2,11 @@
 #include <ModbusRtu.h>
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
+#include <math.h>
 
 // assign the Arduino pin that must be connected to RE-DE RS485 transceiver
 #define TXEN	2 
+#define pulsos_por_volta 550
 const int buttonPin = 7; // the number of the pushbutton pin
 const int ledPinR = 13; // the number of the LED pin
 const int ledPinY = 12; // the number of the LED pin
@@ -14,8 +16,16 @@ const int backward_pwm = 6; // the number of the BACKWARD PWM pin
 const byte Encoder_C1=3; // the number of the Encoder C1 pin
 const byte Encoder_C2=4; // the number of the Encoder C2 pin
 byte Encoder_C1Last;
+int pulso = 0;
+boolean volta = 0;
 uint16_t elapsedTime;
 boolean direction;
+
+volatile unsigned long rpm = 0;
+volatile unsigned long timePulso = 0;
+volatile unsigned long timeCountOld = 0;
+volatile bool valorOld = 0;
+
 // assign pins to KY-15 module
 #define DHTPIN 8
 #define DHTTYPE DHT11
@@ -67,9 +77,9 @@ Modbus slave(1,0,TXEN); // this is slave @1 and RS-485
 
 unsigned long previousMillis = 0;
 unsigned long interval = 2000;
-void calculapulso();
+//void calculapulso();
 void EncoderInit();
-
+void analogReadFunc();
 
 void setup() {  
   Serial.begin( 9600 ); // baud-rate at 19200
@@ -152,7 +162,7 @@ void loop() {
    analogWrite(forward_pwm,0);
    analogWrite(backward_pwm,pwm_value);    
   }
-  data[10] = elapsedTime;
+  //data[5] = elapsedTime;
   previousMillis = currentMillis;
   }
 
@@ -189,10 +199,10 @@ void loop() {
 void EncoderInit()
 {
   pinMode(Encoder_C2, INPUT);
-  attachInterrupt(0, calculapulso, CHANGE);
+  attachInterrupt(0, analogReadFunc, CHANGE);
 }
 
-void calculapulso()
+/*void calculapulso()
 {
   int Lstate = digitalRead(Encoder_C1);
   if ((Encoder_C1Last == LOW) && Lstate == HIGH)
@@ -211,4 +221,19 @@ void calculapulso()
 
   if (!direction)  elapsedTime++;
   else  elapsedTime--;
+}*/
+
+void analogReadFunc() // Faz a leitura do sinal Analogico
+{   
+      int Lstate = digitalRead(Encoder_C1);
+      if(pwm_value!=0){
+        timePulso= pulseIn(Encoder_C2, HIGH);
+        rpm = (unsigned long)(60000000/(pulsos_por_volta*timePulso));
+        data[5] = rpm;
+      }
+      else {
+        timePulso = 0;
+        rpm=0;
+        data[5] = rpm;
+      }
 }
