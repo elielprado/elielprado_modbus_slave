@@ -67,6 +67,9 @@ Modbus slave(1,0,TXEN); // this is slave @1 and RS-485
 
 unsigned long previousMillis = 0;
 unsigned long interval = 2000;
+void calculapulso();
+void EncoderInit();
+
 
 void setup() {  
   Serial.begin( 9600 ); // baud-rate at 19200
