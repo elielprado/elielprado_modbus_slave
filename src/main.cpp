@@ -9,13 +9,19 @@ const int buttonPin = 7; // the number of the pushbutton pin
 const int ledPinR = 13; // the number of the LED pin
 const int ledPinY = 12; // the number of the LED pin
 const int ledPinG = 11; // the number of the LED pin
-const int ledPwm = 3; // the number of the LED pin
+const int forward_pwm = 5; // the number of the FORWARD PWM pin
+const int backward_pwm = 6; // the number of the BACKWARD PWM pin
+const byte Encoder_C1=3; // the number of the Encoder C1 pin
+const byte Encoder_C2=4; // the number of the Encoder C2 pin
+byte Encoder_C1Last;
+uint16_t elapsedTime;
+boolean direction;
 // assign pins to KY-15 module
 #define DHTPIN 8
 #define DHTTYPE DHT11
 
 // variable for pwm led
-int brightness = 0;
+int pwm_value = 0;
 
 
 //Define our DHT object
@@ -35,11 +41,14 @@ Pos (16 bit each) : Meaning
 2 : Humidity (int) (AI)
 3 : Humidity Sensor Status (DO) (OUTPUT)
 4 : Push Button (BOOL) (DI) (INPUT)
+5 : RPM (int) (AO)
 //WRITE ONLY
-5 : LEDR (BOOL) (DO) (OUTPUT)
-6 : LEDY (BOOL) (DO) (OUTPUT)
-7 : LEDG (BOOL) (DO) (OUTPUT)
-8 : PWM LED (BOOL) (AO) (OUTPUT)
+6 : LEDR (BOOL) (DO) (OUTPUT)
+7 : LEDY (BOOL) (DO) (OUTPUT)
+8 : LEDG (BOOL) (DO) (OUTPUT)
+9 : FORWARD OR REVERSE MOTOR (BOOL) (AO) (OUTPUT)
+10 : PWM MOTOR (INT) (AO) (OUTPUT)
+
 
 
 
@@ -68,12 +77,14 @@ void setup() {
   pinMode(ledPinY, OUTPUT);
   pinMode(ledPinG, OUTPUT);
   pinMode(buttonPin, INPUT);
-  pinMode(ledPwm, OUTPUT);
+  pinMode(forward_pwm, OUTPUT);
+  pinMode(backward_pwm, OUTPUT);
+  EncoderInit();
 }
 
 void loop() {
   unsigned long currentMillis = millis();
-  slave.poll( data, 9 ); // poll registers from slave
+  slave.poll( data, 11 ); // poll registers from slave
   if(digitalRead(buttonPin)){
     data[4] = 1;
   }
@@ -126,11 +137,23 @@ void loop() {
   else{
     Serial.println("GOOD");
   }
-
+  
+  pwm_value = data[10];
+  if(data[9]==0) //Set the rotation direction of the motor
+  {
+  //PWM MOTOR
+   analogWrite(backward_pwm,0);
+   analogWrite(forward_pwm,pwm_value);
+  }else{
+  //PWM MOTOR
+   analogWrite(forward_pwm,0);
+   analogWrite(backward_pwm,pwm_value);    
+  }
+  data[10] = elapsedTime;
   previousMillis = currentMillis;
   }
 
-  if(data[5] == 1)
+  if(data[6] == 1)
   {
     digitalWrite(ledPinG, HIGH);
   }
@@ -139,14 +162,14 @@ void loop() {
   }
   //data[0] = myTemp;
   //data[1] = myHumidity;
-  if(data[6] == 1)
+  if(data[7] == 1)
   {
     digitalWrite(ledPinY, HIGH);
   }
   else{
     digitalWrite(ledPinY, LOW);
   }
-  if(data[7] == 1)
+  if(data[8] == 1)
   {
     digitalWrite(ledPinR, HIGH);
   }
@@ -154,14 +177,35 @@ void loop() {
     digitalWrite(ledPinR, LOW);
   }
 
-    //PWM LED
-  brightness = data[8]; 
-  analogWrite(ledPwm,brightness);
-  Serial.print("PWM LED: ");
-  Serial.println(brightness);
-/*
-  Serial.print("Valor Registro: ");
-  Serial.println(data[8]);
-  */
+  
 
+
+
+}
+
+void EncoderInit()
+{
+  pinMode(Encoder_C2, INPUT);
+  attachInterrupt(0, calculapulso, CHANGE);
+}
+
+void calculapulso()
+{
+  int Lstate = digitalRead(Encoder_C1);
+  if ((Encoder_C1Last == LOW) && Lstate == HIGH)
+  {
+    int val = digitalRead(Encoder_C2);
+    if (val == LOW && direction)
+    {
+      direction = false; //Reverse
+    }
+    else if (val == HIGH && !direction)
+    {
+      direction = true;  //Forward
+    }
+  }
+  Encoder_C1Last = Lstate;
+
+  if (!direction)  elapsedTime++;
+  else  elapsedTime--;
 }
