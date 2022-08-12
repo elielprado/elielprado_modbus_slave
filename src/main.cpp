@@ -53,9 +53,9 @@ Pos (16 bit each) : Meaning
 4 : Push Button (BOOL) (DI) (INPUT)
 5 : RPM (int) (AO)
 //WRITE ONLY
-6 : LEDR (BOOL) (DO) (OUTPUT)
+6 : LEDG (BOOL) (DO) (OUTPUT)
 7 : LEDY (BOOL) (DO) (OUTPUT)
-8 : LEDG (BOOL) (DO) (OUTPUT)
+8 : LEDR (BOOL) (DO) (OUTPUT)
 9 : FORWARD OR REVERSE MOTOR (BOOL) (AO) (OUTPUT)
 10 : PWM MOTOR (INT) (AO) (OUTPUT)
 
