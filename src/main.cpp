@@ -58,13 +58,7 @@ Pos (16 bit each) : Meaning
 8 : LEDR (BOOL) (DO) (OUTPUT)
 9 : FORWARD OR REVERSE MOTOR (BOOL) (AO) (OUTPUT)
 10 : PWM MOTOR (INT) (AO) (OUTPUT)
-
-
-
-
-*/
-/*uint16_t au16data[16] = {
-  3, 1415, 9265, 4, 2, 7182, 28182, 8, 0, 0, 0, 0, 0, 0, 1, -1};*/
+11 : Cooler RPM (int) (AI) (INPUT)
 
 /**
  *  Modbus object declaration
@@ -73,16 +67,16 @@ Pos (16 bit each) : Meaning
  *  u8txenpin : 0 for RS-232 and USB-FTDI 
  *               or any pin number > 1 for RS-485
  */
-Modbus slave(1,0,TXEN); // this is slave @1 and RS-485
+
+Modbus slave(1,2,TXEN); // this is slave @1 and RS-485
 
 unsigned long previousMillis = 0;
 unsigned long interval = 2000;
-//void calculapulso();
 void EncoderInit();
 void analogReadFunc();
 
 void setup() {  
-  Serial.begin( 9600 ); // baud-rate at 19200
+  Serial.begin( 9600 ); // baud-rate max tested 115200
   
   slave.start();
   dht.begin();
@@ -97,22 +91,22 @@ void setup() {
 
 void loop() {
   unsigned long currentMillis = millis();
-  slave.poll( data, 11 ); // poll registers from slave
-  if(digitalRead(buttonPin)){
+  slave.poll( data, 12 ); // poll registers from slave
+  
+  if(digitalRead(buttonPin)){ // if button is pressed
     data[4] = 1;
   }
   else{
     data[4] = 0;
   }
-  if(currentMillis - previousMillis > interval)
+
+  if(currentMillis - previousMillis > interval) //this will run every 2 seconds (refresh speed recommended for the temperature sensor)
   {
-  
   float myTemp = dht.readTemperature();
   float myHumidity = dht.readHumidity();
   
   
-  //if variables are numbers, then they can be saved to the array
-  if(myTemp >= 0 && myTemp < 51)
+  if(myTemp >= 0 && myTemp <= 50)
   {
     data[0] = myTemp*100;
     data[1] = 0; //good data
@@ -120,37 +114,18 @@ void loop() {
   {
     data[1] = 1; //temperature status error
   }
-  if(myHumidity >= 0 && myHumidity < 101)
+  if(myHumidity >= 0 && myHumidity <=100)
   {
     data[2] = myHumidity;
     data[3] = 0; //good data
   }else{
     data[3] = 1; //humidity status error
-  }
-  
-  Serial.print("Temperature: ");
-  Serial.println(data[0]);
-  Serial.print("Temperature status: ");
-  
-  if(data[1] == 1)
-  {
-    Serial.println("BAD");
-  }
-  else{
-    Serial.println("GOOD");
-  }
-  Serial.print("Humidity: ");
-  Serial.println(data[2]);
-  Serial.print("Humidity status: ");
+  } 
 
-  if(data[3] == 1)
-  {
-    Serial.println("BAD");
+
+  previousMillis = currentMillis;
   }
-  else{
-    Serial.println("GOOD");
-  }
-  
+    
   pwm_value = data[10];
   if(data[9]==0) //Set the rotation direction of the motor
   {
@@ -162,9 +137,8 @@ void loop() {
    analogWrite(forward_pwm,0);
    analogWrite(backward_pwm,pwm_value);    
   }
-  //data[5] = elapsedTime;
-  previousMillis = currentMillis;
-  }
+
+
 
   if(data[6] == 1)
   {
@@ -173,8 +147,7 @@ void loop() {
   else{
     digitalWrite(ledPinG, LOW);
   }
-  //data[0] = myTemp;
-  //data[1] = myHumidity;
+
   if(data[7] == 1)
   {
     digitalWrite(ledPinY, HIGH);
@@ -190,10 +163,6 @@ void loop() {
     digitalWrite(ledPinR, LOW);
   }
 
-  
-
-
-
 }
 
 void EncoderInit()
@@ -202,36 +171,13 @@ void EncoderInit()
   attachInterrupt(0, analogReadFunc, CHANGE);
 }
 
-/*void calculapulso()
-{
-  int Lstate = digitalRead(Encoder_C1);
-  if ((Encoder_C1Last == LOW) && Lstate == HIGH)
-  {
-    int val = digitalRead(Encoder_C2);
-    if (val == LOW && direction)
-    {
-      direction = false; //Reverse
-    }
-    else if (val == HIGH && !direction)
-    {
-      direction = true;  //Forward
-    }
-  }
-  Encoder_C1Last = Lstate;
-
-  if (!direction)  elapsedTime++;
-  else  elapsedTime--;
-}*/
-
 void analogReadFunc() // Faz a leitura do sinal Analogico
 {   
-      int Lstate = digitalRead(Encoder_C1);
       if(pwm_value!=0){
         timePulso= pulseIn(Encoder_C2, HIGH);
         rpm = (unsigned long)(60000000/(pulsos_por_volta*timePulso));
         data[5] = rpm;
-      }
-      else {
+      }else {
         timePulso = 0;
         rpm=0;
         data[5] = rpm;
