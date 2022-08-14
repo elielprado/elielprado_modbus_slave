@@ -6,7 +6,7 @@
 
 // assign the Arduino pin that must be connected to RE-DE RS485 transceiver
 #define TXEN	2 
-#define pulsos_por_volta 550
+#define pulses_per_lap 550
 const int buttonPin = 7; // the number of the pushbutton pin
 const int ledPinR = 13; // the number of the LED pin
 const int ledPinY = 12; // the number of the LED pin
@@ -58,7 +58,6 @@ Pos (16 bit each) : Meaning
 8 : LEDR (BOOL) (DO) (OUTPUT)
 9 : FORWARD OR REVERSE MOTOR (BOOL) (AO) (OUTPUT)
 10 : PWM MOTOR (INT) (AO) (OUTPUT)
-11 : Cooler RPM (int) (AI) (INPUT)
 
 /**
  *  Modbus object declaration
@@ -91,7 +90,7 @@ void setup() {
 
 void loop() {
   unsigned long currentMillis = millis();
-  slave.poll( data, 12 ); // poll registers from slave
+  slave.poll( data, 11 ); // poll registers from slave
   
   if(digitalRead(buttonPin)){ // if button is pressed
     data[4] = 1;
@@ -175,7 +174,7 @@ void analogReadFunc() // Faz a leitura do sinal Analogico
 {   
       if(pwm_value!=0){
         timePulso= pulseIn(Encoder_C2, HIGH);
-        rpm = (unsigned long)(60000000/(pulsos_por_volta*timePulso));
+        rpm = (unsigned long)(60000000/(pulses_per_lap*timePulso));
         data[5] = rpm;
       }else {
         timePulso = 0;
